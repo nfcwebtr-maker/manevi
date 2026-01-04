@@ -9,12 +9,7 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #faf9f6; }
         .manevi-header { font-family: 'Cinzel', serif; }
-        .arabic-text { 
-            font-family: 'Amiri', serif; 
-            direction: rtl; 
-            line-height: 1.6;
-            word-spacing: 2px;
-        }
+        .arabic-text { font-family: 'Amiri', serif; direction: rtl; line-height: 1.6; word-spacing: 2px; }
         .active-scale:active { transform: scale(0.98); }
         @keyframes pulse-soft {
             0% { transform: scale(1); opacity: 1; }
@@ -39,7 +34,7 @@
         <p id="tarih-etiket" class="text-stone-400 text-[10px] uppercase tracking-[0.2em] mt-2 italic"></p>
     </header>
 
-    <div id="ramazan-sayac-kutusu" class="w-full max-w-md ramazan-bg rounded-2xl border border-amber-100 p-5 mb-4 shadow-sm text-center hidden transition-all">
+    <div id="ramazan-sayac-kutusu" class="w-full max-w-md ramazan-bg rounded-2xl border border-amber-100 p-5 mb-4 shadow-sm text-center hidden">
         <div class="flex items-center justify-center gap-3">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#b45309" viewBox="0 0 256 256"><path d="M233.54,142.23a8,8,0,0,0-10.2-2.32,72.06,72.06,0,0,1-105.26-77A8,8,0,0,0,105,53.46a88,88,0,1,0,126.2,86.45A8,8,0,0,0,233.54,142.23Z"></path></svg>
             <p id="ramazan-metin" class="text-amber-900 font-semibold tracking-wide text-sm"></p>
@@ -56,7 +51,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256"><path d="M155.51,24.81a8,8,0,0,0-8.42.88L77.25,80H32A16,16,0,0,0,16,96v64a16,16,0,0,0,16,16H77.25l69.84,54.31A8,8,0,0,0,160,224V32A8,8,0,0,0,155.51,24.81ZM144,207.64,85.14,161.86A8,8,0,0,0,80,160H32V96H80a8,8,0,0,0,5.14-1.86L144,48.36ZM216,128a40,40,0,0,1-40,40,8,8,0,0,1,0-16,24,24,0,0,0,0-48,8,8,0,0,1,0-16A40,40,0,0,1,216,128Z"></path></svg>
             </button>
         </div>
-        <p id="ayet-metin" class="text-lg font-light leading-relaxed text-stone-800 italic text-center italic"></p>
+        <p id="ayet-metin" class="text-xl font-light leading-relaxed text-stone-800 italic text-center"></p>
         <p id="ayet-kaynak" class="text-right text-[10px] text-stone-400 mt-6 font-medium tracking-wide">— ...</p>
     </div>
 
@@ -71,7 +66,7 @@
             </button>
         </div>
         <p id="hadis-arapca" class="arabic-text text-2xl text-stone-700 mb-8 text-center italic"></p>
-        <p id="hadis-metin" class="text-lg font-light leading-relaxed text-stone-800 italic text-center"></p>
+        <p id="hadis-metin" class="text-xl font-light leading-relaxed text-stone-800 italic text-center"></p>
         <p id="hadis-kaynak" class="text-right text-[10px] text-stone-400 mt-6 font-medium tracking-wide">— ...</p>
     </div>
 
@@ -88,12 +83,8 @@
     </footer>
 
     <script>
-        // CSV AYRIŞTIRICI: Tırnak içindeki çok satırlı metinleri ve virgülleri korur
         function processCSV(csv) {
-            const result = [];
-            let row = [];
-            let curr = '';
-            let inQuotes = false;
+            const result = []; let row = []; let curr = ''; let inQuotes = false;
             for (let i = 0; i < csv.length; i++) {
                 let char = csv[i], next = csv[i+1];
                 if (char === '"' && inQuotes && next === '"') { curr += '"'; i++; }
@@ -110,21 +101,13 @@
 
         function ramazanHesapla() {
             const bugun = new Date();
-            const ramazanBaslangic = new Date(2026, 1, 18); // 18 Şubat 2026
+            const ramazanBaslangic = new Date(2026, 1, 18);
             const farkMs = ramazanBaslangic - bugun;
             const gunKalan = Math.ceil(farkMs / (1000 * 60 * 60 * 24));
             const sayacKutusu = document.getElementById('ramazan-sayac-kutusu');
-            const sayacMetin = document.getElementById('ramazan-metin');
-            
             if (gunKalan > 0) {
                 sayacKutusu.classList.remove('hidden');
-                sayacMetin.innerText = `Ramazan'a ${gunKalan} gün kaldı`;
-            } else if (gunKalan === 0) {
-                sayacKutusu.classList.remove('hidden');
-                sayacMetin.innerText = `Bugün Ramazan'ın ilk günü! Hayırlı Ramazanlar.`;
-            } else if (gunKalan < 0 && gunKalan > -30) {
-                sayacKutusu.classList.remove('hidden');
-                sayacMetin.innerText = `Hayırlı Ramazanlar...`;
+                document.getElementById('ramazan-metin').innerText = `Ramazan'a ${gunKalan} gün kaldı`;
             }
         }
 
@@ -152,22 +135,20 @@
         async function verileriGetir() {
             const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
             try {
-                // AYETLER
+                // AYETLER (A: Metin, B: Kaynak)
                 const ayetRes = await fetch(AYET_CSV_URL + '&cache=' + Date.now());
                 let ayetData = processCSV(await ayetRes.text());
-                if (ayetData[0][0].toLowerCase().includes("ayet")) ayetData.shift();
+                // İlk satır başlık mı diye kontrol et (Arapça içermiyorsa ve çok kısaysa başlık kabul et)
+                if (ayetData[0][0].length < 20 && !ayetData[0][0].includes(" ")) ayetData.shift();
                 const ayetRow = ayetData[dayOfYear % ayetData.length];
                 document.getElementById('ayet-metin').innerText = ayetRow[0] || "";
                 document.getElementById('ayet-kaynak').innerText = "— " + (ayetRow[1] || "Kuran-ı Kerim");
 
-                // HADİSLER
+                // HADİSLER (A: Arapça, B: Türkçe, C: Kaynak)
                 const hadisRes = await fetch(HADIS_CSV_URL + '&cache=' + Date.now());
                 let hadisData = processCSV(await hadisRes.text());
-                // Başlık satırı kontrolü (İlk satırda arapça yoksa atla)
                 if (hadisData[0][0].includes("عَنْ") === false && hadisData[0][0].length < 20) hadisData.shift();
-                
                 const hadisRow = hadisData[dayOfYear % hadisData.length];
-                // 3 sütun mantığı: A=Arapça, B=Türkçe, C=Kaynak
                 document.getElementById('hadis-arapca').innerText = hadisRow[0] || "";
                 document.getElementById('hadis-metin').innerText = hadisRow[1] || "";
                 document.getElementById('hadis-kaynak').innerText = "— " + (hadisRow[2] || "Hadis-i Şerif");
