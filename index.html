@@ -5,120 +5,139 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manevi - Günlük Hatırlatıcı</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;500&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        .manevi-title { font-family: 'Cinzel', serif; }
-        .card-shadow { box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04); }
+        body { font-family: 'Inter', sans-serif; background-color: #faf9f6; }
+        .manevi-header { font-family: 'Cinzel', serif; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        /* Dokunma hissi için animasyon */
+        .active-scale:active { transform: scale(0.98); }
     </style>
 </head>
-<body class="bg-[#faf9f6] text-stone-800 min-h-screen flex flex-col items-center p-6">
+<body class="text-stone-800 min-h-screen flex flex-col items-center p-6 select-none">
 
     <header class="w-full max-w-md py-12 text-center">
-        <h1 class="manevi-title text-4xl tracking-[0.4em] text-stone-700 uppercase">MANEVİ</h1>
-        <div class="h-px w-16 bg-stone-300 mx-auto mt-4"></div>
-        <p id="tarih-alani" class="text-stone-400 text-[10px] uppercase tracking-[0.2em] mt-6 italic"></p>
+        <h1 class="manevi-header text-4xl tracking-[0.4em] text-stone-700 uppercase">MANEVİ</h1>
+        <div class="h-px w-12 bg-stone-300 mx-auto mt-4 opacity-60"></div>
+        <p id="tarih-etiket" class="text-stone-400 text-[10px] uppercase tracking-[0.2em] mt-6 italic"></p>
     </header>
 
-    <div class="w-full max-w-md bg-white rounded-3xl card-shadow border border-stone-100 p-8 mb-6">
-        <h2 class="text-[10px] font-bold text-amber-700 uppercase tracking-[0.2em] mb-6">Günün Sözü</h2>
-        <p id="gunun-sozu" class="text-xl font-light leading-relaxed text-stone-800 italic">Yükleniyor...</p>
-        <p id="soz-kaynak" class="text-right text-xs text-stone-400 mt-6 font-medium">— Kaynak</p>
+    <div class="active-scale w-full max-w-md bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-stone-100 p-8 mb-6 transition-all duration-300">
+        <div class="flex items-center gap-2 mb-6">
+            <span class="h-1.5 w-1.5 rounded-full bg-amber-600"></span>
+            <h2 class="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em]">Günün Mesajı</h2>
+        </div>
+        <p id="ana-soz" class="text-xl font-light leading-relaxed text-stone-800 italic">"Gönül ne kahve ister ne kahvehane, gönül ahbab ister kahve bahane."</p>
+        <p id="ana-kaynak" class="text-right text-xs text-stone-400 mt-6 font-medium">— Anonim</p>
     </div>
 
-    <div class="w-full max-w-md bg-white rounded-3xl card-shadow border border-stone-100 p-8 mb-8">
+    <div class="active-scale w-full max-w-md bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-stone-100 p-8 mb-8 transition-all duration-300">
         <div class="flex justify-between items-center mb-6 border-b border-stone-50 pb-4">
-            <h2 class="text-[10px] font-bold text-stone-500 uppercase tracking-[0.2em]">Namaz Vakitleri</h2>
-            <span id="konum-durum" class="text-[9px] text-stone-300 uppercase tracking-widest italic">Konum Bekleniyor...</span>
+            <h2 class="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em]">Vakitler</h2>
+            <div class="flex items-center gap-1">
+                <span id="konum-ikon" class="h-1 w-1 rounded-full bg-stone-300"></span>
+                <span id="durum-mesaj" class="text-[9px] text-stone-300 uppercase tracking-widest italic">Konum aranıyor</span>
+            </div>
         </div>
         <div id="vakitler-liste" class="space-y-4">
-            <p class="text-stone-300 text-xs text-center animate-pulse">Vakitler yükleniyor...</p>
+            <div class="animate-pulse flex flex-col gap-4">
+                <div class="h-4 bg-stone-50 rounded w-full"></div>
+                <div class="h-4 bg-stone-50 rounded w-3/4"></div>
+            </div>
         </div>
     </div>
 
-    <footer class="mt-auto py-8 text-stone-400 text-[9px] tracking-[0.3em] text-center uppercase">
-        Manevi &copy; 2026 | Kalbe Bir Dokunuş
+    <footer class="mt-auto py-8 text-stone-400 text-[9px] tracking-[0.4em] text-center uppercase opacity-60">
+        Manevi &copy; 2026 | Ruhun Sessizliği
     </footer>
 
     <script>
-        // 1. Tarih Gösterimi
-        function tarihiGoster() {
+        // 1. GÜNCEL TÜRKÇE TARİH
+        function tarihiYazdir() {
             const secenekler = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-            document.getElementById('tarih-alani').innerText = new Date().toLocaleDateString('tr-TR', secenekler);
+            document.getElementById('tarih-etiket').innerText = new Date().toLocaleDateString('tr-TR', secenekler);
         }
 
-        // 2. JSON'dan Sözleri Çekme
-        async function icerikGetir() {
-            const sozAla = document.getElementById('gunun-sozu');
-            const kaynakAla = document.getElementById('soz-kaynak');
+        // 2. GÜNLÜK İÇERİK MANTIĞI
+        async function icerikYukle() {
+            const sozElement = document.getElementById('ana-soz');
+            const kaynakElement = document.getElementById('ana-kaynak');
             
             try {
-                // GitHub Pages için ./data kullanımı en güvenlisidir
-                const yanit = await fetch('./data/contents.json');
-                if (!yanit.ok) throw new Error('Veri dosyası bulunamadı');
+                // ./data yolu GitHub Pages için en güvenli yoldur
+                const response = await fetch('./data/contents.json');
+                if (!response.ok) throw new Error('Dosya hatası');
                 
-                const liste = await yanit.json();
+                const veriler = await response.json();
                 
-                // Günlük index hesaplama
+                // Günlük değişen index
                 const simdi = new Date();
-                const yilBaslangici = new Date(simdi.getFullYear(), 0, 0);
-                const fark = simdi - yilBaslangici;
-                const gun = Math.floor(fark / 86400000);
+                const baslangic = new Date(simdi.getFullYear(), 0, 0);
+                const fark = simdi - baslangic;
+                const gunIndex = Math.floor(fark / (1000 * 60 * 60 * 24));
                 
-                const icerik = liste[gun % liste.length];
+                const secilen = veriler[gunIndex % veriler.length];
                 
-                sozAla.innerText = icerik.soz;
-                kaynakAla.innerText = `— ${icerik.kaynak}`;
-            } catch (hata) {
-                console.error("Hata:", hata);
-                sozAla.innerText = "İçerik şu an yüklenemedi. Lütfen 'data/contents.json' dosyasını kontrol edin.";
+                sozElement.innerText = `"${secilen.soz}"`;
+                kaynakElement.innerText = `— ${secilen.kaynak}`;
+            } catch (error) {
+                console.error("Veri yükleme hatası:", error);
+                sozElement.innerText = "İyilik yap, denize at; balık bilmezse Halik bilir.";
             }
         }
 
-        // 3. Namaz Vakitleri ve Konum
-        async function vakitleriYukle() {
-            const durum = document.getElementById('konum-durum');
-            const listeAlani = document.getElementById('vakitler-liste');
+        // 3. NAMAZ VAKİTLERİ (ALADHAN API)
+        async function vakitleriGetir() {
+            const durum = document.getElementById('durum-mesaj');
+            const ikon = document.getElementById('konum-ikon');
 
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(async (pos) => {
-                    const { latitude, longitude } = pos.coords;
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+                    
                     try {
-                        // Method 13: Diyanet/Türkiye için en uygun hesaplama
-                        const yanit = await fetch(`https://api.aladhan.com/v1/timings?latitude=${latitude}&longitude=${longitude}&method=13`);
-                        const data = await yanit.json();
+                        // Method 13 = Diyanet İşleri Başkanlığı
+                        const response = await fetch(`https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lon}&method=13`);
+                        const result = await response.json();
                         
-                        vakitleriBas(data.data.timings);
-                        durum.innerText = "Konum Güncellendi";
-                    } catch (e) {
-                        durum.innerText = "Bağlantı Hatası";
+                        vakitleriListele(result.data.timings);
+                        durum.innerText = "Konumunuz Alındı";
+                        ikon.classList.replace('bg-stone-300', 'bg-emerald-500');
+                    } catch (err) {
+                        durum.innerText = "Veri Alınamadı";
                     }
-                }, (hata) => {
-                    durum.innerText = "Konum İzni Gerekli";
-                    listeAlani.innerHTML = '<p class="text-stone-400 text-xs text-center">Vakitleri görmek için konum izni veriniz.</p>';
+                }, () => {
+                    durum.innerText = "Konum İzni Yok";
+                    document.getElementById('vakitler-liste').innerHTML = '<p class="text-stone-400 text-[10px] text-center italic">Vakitleri görmek için lütfen konum izni verin.</p>';
                 });
             }
         }
 
-        function vakitleriBas(timings) {
-            const isimler = { Fajr: "İmsak", Dhuhr: "Öğle", Asr: "İkindi", Maghrib: "Akşam", Isha: "Yatsı" };
+        function vakitleriListele(vakitler) {
             const liste = document.getElementById('vakitler-liste');
-            liste.innerHTML = '';
+            const isimlerMap = { Fajr: "İmsak", Dhuhr: "Öğle", Asr: "İkindi", Maghrib: "Akşam", Isha: "Yatsı" };
+            const siraliVakitler = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
             
-            ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].forEach(v => {
+            liste.innerHTML = '';
+            siraliVakitler.forEach(v => {
                 liste.innerHTML += `
-                    <div class="flex justify-between items-center group">
-                        <span class="text-stone-500 font-light group-hover:text-amber-700 transition-colors tracking-wide">${isimler[v]}</span>
-                        <span class="text-stone-900 font-medium tracking-widest">${timings[v]}</span>
+                    <div class="flex justify-between items-center group py-1">
+                        <span class="text-stone-400 font-light text-sm tracking-wide group-hover:text-stone-600 transition-colors">${isimlerMap[v]}</span>
+                        <span class="text-stone-800 font-medium tracking-[0.1em]">${vakitler[v]}</span>
                     </div>
                 `;
             });
         }
 
-        // Başlat
-        tarihiGoster();
-        icerikGetir();
-        vakitleriYukle();
+        // Başlatıcılar
+        tarihiYazdir();
+        icerikYukle();
+        vakitleriGetir();
     </script>
 </body>
 </html>
