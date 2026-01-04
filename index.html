@@ -9,6 +9,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;500&display=swap');
         body { font-family: 'Inter', sans-serif; }
         .manevi-title { font-family: 'Cinzel', serif; }
+        .card-shadow { box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04); }
     </style>
 </head>
 <body class="bg-[#faf9f6] text-stone-800 min-h-screen flex flex-col items-center p-6">
@@ -19,19 +20,20 @@
         <p id="tarih-alani" class="text-stone-400 text-[10px] uppercase tracking-[0.2em] mt-6 italic"></p>
     </header>
 
-    <div class="w-full max-w-md bg-white rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-stone-100 p-8 mb-6">
+    <div class="w-full max-w-md bg-white rounded-3xl card-shadow border border-stone-100 p-8 mb-6">
         <h2 class="text-[10px] font-bold text-amber-700 uppercase tracking-[0.2em] mb-6">Günün Sözü</h2>
         <p id="gunun-sozu" class="text-xl font-light leading-relaxed text-stone-800 italic">Yükleniyor...</p>
         <p id="soz-kaynak" class="text-right text-xs text-stone-400 mt-6 font-medium">— Kaynak</p>
     </div>
 
-    <div class="w-full max-w-md bg-white rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-stone-100 p-8 mb-8">
+    <div class="w-full max-w-md bg-white rounded-3xl card-shadow border border-stone-100 p-8 mb-8">
         <div class="flex justify-between items-center mb-6 border-b border-stone-50 pb-4">
             <h2 class="text-[10px] font-bold text-stone-500 uppercase tracking-[0.2em]">Namaz Vakitleri</h2>
-            <span id="konum-durum" class="text-[9px] text-stone-300 uppercase tracking-widest italic">Konum aranıyor...</span>
+            <span id="konum-durum" class="text-[9px] text-stone-300 uppercase tracking-widest italic">Konum Bekleniyor...</span>
         </div>
         <div id="vakitler-liste" class="space-y-4">
-            </div>
+            <p class="text-stone-300 text-xs text-center animate-pulse">Vakitler yükleniyor...</p>
+        </div>
     </div>
 
     <footer class="mt-auto py-8 text-stone-400 text-[9px] tracking-[0.3em] text-center uppercase">
@@ -39,41 +41,61 @@
     </footer>
 
     <script>
-        // Türkçe Tarih
+        // 1. Tarih Gösterimi
         function tarihiGoster() {
             const secenekler = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
             document.getElementById('tarih-alani').innerText = new Date().toLocaleDateString('tr-TR', secenekler);
         }
 
-        // Günlük İçerik Yükleme
+        // 2. JSON'dan Sözleri Çekme
         async function icerikGetir() {
+            const sozAla = document.getElementById('gunun-sozu');
+            const kaynakAla = document.getElementById('soz-kaynak');
+            
             try {
-                const yanit = await fetch('data/contents.json');
+                // GitHub Pages için ./data kullanımı en güvenlisidir
+                const yanit = await fetch('./data/contents.json');
+                if (!yanit.ok) throw new Error('Veri dosyası bulunamadı');
+                
                 const liste = await yanit.json();
                 
-                const gun = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+                // Günlük index hesaplama
+                const simdi = new Date();
+                const yilBaslangici = new Date(simdi.getFullYear(), 0, 0);
+                const fark = simdi - yilBaslangici;
+                const gun = Math.floor(fark / 86400000);
+                
                 const icerik = liste[gun % liste.length];
                 
-                document.getElementById('gunun-sozu').innerText = icerik.soz;
-                document.getElementById('soz-kaynak').innerText = `— ${icerik.kaynak}`;
+                sozAla.innerText = icerik.soz;
+                kaynakAla.innerText = `— ${icerik.kaynak}`;
             } catch (hata) {
-                document.getElementById('gunun-sozu').innerText = "Bir mola ver ve nefes al.";
+                console.error("Hata:", hata);
+                sozAla.innerText = "İçerik şu an yüklenemedi. Lütfen 'data/contents.json' dosyasını kontrol edin.";
             }
         }
 
-        // Namaz Vakitleri (Diyanet Metodu)
+        // 3. Namaz Vakitleri ve Konum
         async function vakitleriYukle() {
+            const durum = document.getElementById('konum-durum');
+            const listeAlani = document.getElementById('vakitler-liste');
+
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(async (pos) => {
                     const { latitude, longitude } = pos.coords;
                     try {
+                        // Method 13: Diyanet/Türkiye için en uygun hesaplama
                         const yanit = await fetch(`https://api.aladhan.com/v1/timings?latitude=${latitude}&longitude=${longitude}&method=13`);
                         const data = await yanit.json();
+                        
                         vakitleriBas(data.data.timings);
-                        document.getElementById('konum-durum').innerText = "Konum Güncellendi";
+                        durum.innerText = "Konum Güncellendi";
                     } catch (e) {
-                        document.getElementById('konum-durum').innerText = "Hata oluştu";
+                        durum.innerText = "Bağlantı Hatası";
                     }
+                }, (hata) => {
+                    durum.innerText = "Konum İzni Gerekli";
+                    listeAlani.innerHTML = '<p class="text-stone-400 text-xs text-center">Vakitleri görmek için konum izni veriniz.</p>';
                 });
             }
         }
@@ -86,14 +108,17 @@
             ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].forEach(v => {
                 liste.innerHTML += `
                     <div class="flex justify-between items-center group">
-                        <span class="text-stone-500 font-light group-hover:text-amber-700 transition-colors">${isimler[v]}</span>
+                        <span class="text-stone-500 font-light group-hover:text-amber-700 transition-colors tracking-wide">${isimler[v]}</span>
                         <span class="text-stone-900 font-medium tracking-widest">${timings[v]}</span>
                     </div>
                 `;
             });
         }
 
+        // Başlat
         tarihiGoster();
         icerikGetir();
         vakitleriYukle();
-    </script
+    </script>
+</body>
+</html>
