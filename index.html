@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Inspiration & Prayer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .card { transition: transform 0.2s; }
+        .card:active { transform: scale(0.98); }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col items-center p-4">
+
+    <header class="w-full max-w-md py-8 text-center">
+        <h1 class="text-3xl font-bold tracking-tight text-slate-800">DAILY CONNECT</h1>
+        <p class="text-slate-500 text-sm mt-1" id="current-date"></p>
+    </header>
+
+    <div class="card w-full max-w-md bg-white rounded-3xl shadow-sm border border-slate-100 p-6 mb-4">
+        <h2 class="text-xs font-semibold text-blue-500 uppercase tracking-widest mb-3">Zitat des Tages</h2>
+        <p id="quote-text" class="text-xl font-medium leading-relaxed text-slate-800">Lade Inspiration...</p>
+        <p id="quote-source" class="text-right text-sm text-slate-400 mt-3">— Quelle</p>
+    </div>
+
+    <div class="card w-full max-w-md bg-white rounded-3xl shadow-sm border border-slate-100 p-6 mb-4">
+        <h2 class="text-xs font-semibold text-emerald-500 uppercase tracking-widest mb-4">Gebetszeiten</h2>
+        <div id="prayer-loader" class="text-sm text-slate-400">Suche Standort...</div>
+        <div id="prayer-grid" class="grid grid-cols-2 gap-3 hidden">
+            </div>
+        <p id="location-name" class="text-[10px] text-slate-300 mt-4 text-center"></p>
+    </div>
+
+    <footer class="mt-auto py-6 text-slate-400 text-xs text-center">
+        &copy; 2026 Dein Projekt | Powered by NFC & GitHub
+    </footer>
+
+    <script>
+        // 1. DATEN-POOL (Beispiel für Zitate)
+        // Hier kannst du später 365 Zitate einfügen
+        const quotes = [
+            { text: "Der beste Weg, die Zukunft vorherzusagen, ist, sie zu erschaffen.", source: "Abraham Lincoln" },
+            { text: "Wissen ist Macht, aber Handeln ist der Schlüssel.", source: "Unbekannt" },
+            { text: "Geduld ist ein Baum, dessen Wurzel bitter, dessen Frucht aber sehr süß ist.", source: "Persisches Sprichwort" },
+            { text: "Verbringe nicht die Zeit mit der Suche nach einem Hindernis, vielleicht ist keines da.", source: "Franz Kafka" }
+        ];
+
+        // 2. LOGIK: INHALT DES TAGES WÄHLEN
+        function updateDailyContent() {
+            const now = new Date();
+            const start = new Date(now.getFullYear(), 0, 0);
+            const diff = now - start;
+            const oneDay = 1000 * 60 * 60 * 24;
+            const dayOfYear = Math.floor(diff / oneDay);
+            
+            // Wählt ein Zitat basierend auf dem Tag des Jahres
+            const dailyQuote = quotes[dayOfYear % quotes.length];
+            document.getElementById('quote-text').innerText = dailyQuote.text;
+            document.getElementById('quote-source').innerText = `— ${dailyQuote.source}`;
+            
+            // Datum anzeigen
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('current-date').innerText = now.toLocaleDateString('de-DE', options);
+        }
+
+        // 3. LOGIK: GEBETSZEITEN (ALADHAN API)
+        async function getPrayerTimes() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    
+                    try {
+                        const response = await fetch(`https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lon}&method=2`);
+                        const data = await response.json();
+                        displayPrayers(data.data.timings, data.data.meta.timezone);
+                    } catch (error) {
+                        document.getElementById('prayer-loader').innerText = "Fehler beim Laden.";
+                    }
+                }, () => {
+                    document.getElementById('prayer-loader').innerText = "Standortzugriff verweigert.";
+                });
+            }
+        }
+
+        function displayPrayers(timings, zone) {
+            const grid = document.getElementById('prayer-grid');
+            const loader = document.getElementById('prayer-loader');
+            const relevant = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+            
+            grid.innerHTML = '';
+            relevant.forEach(name => {
+                grid.innerHTML += `
+                    <div class="flex justify-between p-2 bg-slate-50 rounded-xl">
+                        <span class="font-medium text-slate-600">${name}</span>
+                        <span class="text-slate-900">${timings[name]}</span>
+                    </div>
+                `;
+            });
+            
+            loader.classList.add('hidden');
+            grid.classList.remove('hidden');
+            document.getElementById('location-name').innerText = `Berechnet für: ${zone}`;
+        }
+
+        // Start
+        updateDailyContent();
+        getPrayerTimes();
+    </script>
+</body>
+</html>
