@@ -9,7 +9,12 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #faf9f6; }
         .manevi-header { font-family: 'Cinzel', serif; }
-        .arabic-text { font-family: 'Amiri', serif; direction: rtl; }
+        /* Arapça metin için özel ayar */
+        .arabic-text { 
+            font-family: 'Amiri', serif; 
+            direction: rtl; 
+            line-height: 1.8;
+        }
         .active-scale:active { transform: scale(0.98); }
         @keyframes pulse-soft {
             0% { transform: scale(1); opacity: 1; }
@@ -43,7 +48,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256"><path d="M155.51,24.81a8,8,0,0,0-8.42.88L77.25,80H32A16,16,0,0,0,16,96v64a16,16,0,0,0,16,16H77.25l69.84,54.31A8,8,0,0,0,160,224V32A8,8,0,0,0,155.51,24.81ZM144,207.64,85.14,161.86A8,8,0,0,0,80,160H32V96H80a8,8,0,0,0,5.14-1.86L144,48.36ZM216,128a40,40,0,0,1-40,40,8,8,0,0,1,0-16,24,24,0,0,0,0-48,8,8,0,0,1,0-16A40,40,0,0,1,216,128Z"></path></svg>
             </button>
         </div>
-        <p id="ayet-metin" class="text-lg font-light leading-relaxed text-stone-800 italic text-center italic"></p>
+        <p id="ayet-metin" class="text-lg font-light leading-relaxed text-stone-800 italic text-center italic">Yükleniyor...</p>
         <p id="ayet-kaynak" class="text-right text-[10px] text-stone-400 mt-6 font-medium tracking-wide">— ...</p>
     </div>
 
@@ -58,8 +63,10 @@
             </button>
         </div>
         
-        <p id="hadis-arapca" class="arabic-text text-2xl text-stone-700 mb-6 text-center leading-loose"></p>
-        <p id="hadis-metin" class="text-lg font-light leading-relaxed text-stone-800 italic text-center italic"></p>
+        <p id="hadis-arapca" class="arabic-text text-2xl text-stone-700 mb-6 text-center"></p>
+        
+        <p id="hadis-metin" class="text-lg font-light leading-relaxed text-stone-800 italic text-center italic">Yükleniyor...</p>
+        
         <p id="hadis-kaynak" class="text-right text-[10px] text-stone-400 mt-6 font-medium tracking-wide">— ...</p>
     </div>
 
@@ -76,20 +83,21 @@
     </footer>
 
     <script>
-        // Veri okuma mekanizması (CSV Parser)
+        // GELİŞMİŞ CSV AYRIŞTIRICI (Tırnak içindeki kommalardan etkilenmez)
         function parseCSV(text) {
-            const rows = text.split(/\r?\n/).filter(row => row.trim() !== '');
-            return rows.map(row => {
+            const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
+            return lines.map(line => {
                 const result = [];
-                let current = '';
+                let cur = '';
                 let inQuotes = false;
-                for (let i = 0; i < row.length; i++) {
-                    const char = row[i];
-                    if (char === '"') { inQuotes = !inQuotes; }
-                    else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
-                    else { current += char; }
+                for (let i = 0; i < line.length; i++) {
+                    const c = line[i];
+                    if (c === '"' && line[i+1] === '"') { cur += '"'; i++; } 
+                    else if (c === '"') { inQuotes = !inQuotes; }
+                    else if (c === ',' && !inQuotes) { result.push(cur.trim()); cur = ''; }
+                    else { cur += c; }
                 }
-                result.push(current.trim());
+                result.push(cur.trim());
                 return result;
             });
         }
@@ -118,23 +126,34 @@
         async function verileriGetir() {
             const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
             try {
-                // Ayetler
+                // AYETLER (A: Metin, B: Kaynak)
                 const ayetRes = await fetch(AYET_CSV_URL + '&cache=' + Date.now());
-                const ayetData = parseCSV(await ayetRes.text());
-                if (ayetData.length > 0) {
-                    const row = ayetData[dayOfYear % ayetData.length];
-                    document.getElementById('ayet-metin').innerText = row[0] || '';
-                    document.getElementById('ayet-kaynak').innerText = "— " + (row[1] || "Kuran-ı Kerim");
-                }
-                // Hadisler
+                let ayetData = parseCSV(await ayetRes.text());
+                // Başlık satırı varsa atla
+                if (ayetData[0][0].toLowerCase().includes("ayet")) ayetData.shift();
+                
+                const ayetRow = ayetData[dayOfYear % ayetData.length];
+                document.getElementById('ayet-metin').innerText = ayetRow[0] || "";
+                document.getElementById('ayet-kaynak').innerText = "— " + (ayetRow[1] || "Kuran-ı Kerim");
+
+                // HADİSLER (A: Arapça, B: Türkçe, C: Kaynak)
                 const hadisRes = await fetch(HADIS_CSV_URL + '&cache=' + Date.now());
-                const hadisData = parseCSV(await hadisRes.text());
-                if (hadisData.length > 0) {
-                    const row = hadisData[dayOfYear % hadisData.length];
-                    // Boş hücreleri kontrol et (undefined yazmasını engeller)
-                    document.getElementById('hadis-arapca').innerText = (row[0] && row[0] !== "undefined") ? row[0] : "";
-                    document.getElementById('hadis-metin').innerText = (row[1] && row[1] !== "undefined") ? row[1] : (row[0] || "");
-                    document.getElementById('hadis-kaynak').innerText = "— " + (row[2] || "Hadis-i Şerif");
+                let hadisData = parseCSV(await hadisRes.text());
+                // Başlık satırı varsa atla
+                if (hadisData[0][1] && hadisData[0][1].toLowerCase().includes("türkçe")) hadisData.shift();
+
+                const hadisRow = hadisData[dayOfYear % hadisData.length];
+                
+                // Eğer Excel'de 3 sütun varsa: A=Arapça, B=Türkçe, C=Kaynak
+                if (hadisRow.length >= 3) {
+                    document.getElementById('hadis-arapca').innerText = hadisRow[0] || "";
+                    document.getElementById('hadis-metin').innerText = hadisRow[1] || "";
+                    document.getElementById('hadis-kaynak').innerText = "— " + (hadisRow[2] || "Hadis-i Şerif");
+                } else {
+                    // Sadece 2 sütun varsa (Arapça yok demektir)
+                    document.getElementById('hadis-arapca').innerText = "";
+                    document.getElementById('hadis-metin').innerText = hadisRow[0] || "";
+                    document.getElementById('hadis-kaynak').innerText = "— " + (hadisRow[1] || "Hadis-i Şerif");
                 }
             } catch (e) { console.error("Veri hatası:", e); }
         }
