@@ -23,7 +23,6 @@
     <header class="w-full max-w-md py-10 text-center">
         <h1 class="manevi-header text-4xl tracking-[0.4em] text-stone-700 uppercase">MANEVİ</h1>
         <div class="h-px w-12 bg-stone-300 mx-auto mt-4 opacity-60"></div>
-        
         <p id="hicri-etiket" class="text-stone-600 text-xl font-medium tracking-wide mt-8 italic">...</p>
         <p id="tarih-etiket" class="text-stone-400 text-[10px] uppercase tracking-[0.2em] mt-2 italic"></p>
     </header>
@@ -40,17 +39,17 @@
                 </svg>
             </button>
         </div>
-        <p id="ana-soz" class="text-xl font-light leading-relaxed text-stone-800 italic text-center italic">Yükleniyor...</p>
+        <p id="ana-soz" class="text-xl font-light leading-relaxed text-stone-800 italic text-center">Yükleniyor...</p>
         <p id="ana-kaynak" class="text-right text-xs text-stone-400 mt-6 font-medium">— ...</p>
     </div>
 
-    <div class="active-scale w-full max-w-md bg-white rounded-[2rem] shadow-[0_8px_30_rgb(0,0,0,0.02)] border border-stone-100 p-8 mb-8">
+    <div class="active-scale w-full max-w-md bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-stone-100 p-8 mb-8">
         <div class="flex justify-between items-center mb-6 border-b border-stone-50 pb-4">
             <h2 class="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em]">Vakitler</h2>
             <span id="durum-mesaj" class="text-[9px] text-stone-300 uppercase tracking-widest italic font-medium">Konum aranıyor</span>
         </div>
         <div id="vakitler-liste" class="space-y-4">
-            <p class="text-stone-300 text-xs text-center">Hesaplanıyor...</p>
+            <p class="text-stone-300 text-xs text-center italic">Yükleniyor...</p>
         </div>
     </div>
 
@@ -59,7 +58,6 @@
     </footer>
 
     <script>
-        // Sesli Okuma
         let okumaSirasinda = false;
         function metniOku() {
             const metin = document.getElementById('ana-soz').innerText;
@@ -75,7 +73,6 @@
             }
         }
 
-        // Tarihleri Güncelle
         async function tarihleriGuncelle() {
             const miladiSecenekler = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
             document.getElementById('tarih-etiket').innerText = new Date().toLocaleDateString('tr-TR', miladiSecenekler);
@@ -89,30 +86,29 @@
             } catch (err) { console.error("Takvim hatası"); }
         }
 
-        // GÜNLÜK İÇERİK (Hata Ayıklamalı Sürüm)
         async function icerikYukle() {
             const sozElement = document.getElementById('ana-soz');
             const kaynakElement = document.getElementById('ana-kaynak');
             try {
-                // Cache-Buster ekledik (?v=...) böylece tarayıcı eskiyi yüklemez
-                const response = await fetch('data/contents.json?v=' + Date.now());
-                if (!response.ok) throw new Error('Dosya bulunamadı (404)');
+                // Pfad-Check: Wir versuchen es direkt über den relativen Pfad
+                const res = await fetch('data/contents.json?v=' + Date.now());
+                if (!res.ok) throw new Error('Datei nicht gefunden');
+                const data = await res.json();
                 
-                const veriler = await response.json();
-                if (!Array.isArray(veriler)) throw new Error('JSON formatı hatalı (Dizi değil)');
+                const now = new Date();
+                const start = new Date(now.getFullYear(), 0, 0);
+                const diff = now - start;
+                const day = Math.floor(diff / 86400000);
                 
-                const gunIndex = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-                const secilen = veriler[gunIndex % veriler.length];
-                
-                sozElement.innerText = secilen.soz;
-                kaynakElement.innerText = `— ${secilen.kaynak}`;
-            } catch (error) {
-                console.error("Hata Detayı:", error);
-                sozElement.innerText = "İçerik yüklenemedi: " + error.message;
+                const content = data[day % data.length];
+                sozElement.innerText = content.soz;
+                kaynakElement.innerText = "— " + content.kaynak;
+            } catch (e) {
+                console.error(e);
+                sozElement.innerText = "Şu an içerik yüklenemedi. Lütfen JSON dosyasını kontrol edin.";
             }
         }
 
-        // Namaz Vakitleri
         async function vakitleriGetir() {
             const durum = document.getElementById('durum-mesaj');
             if (navigator.geolocation) {
