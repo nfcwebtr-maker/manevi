@@ -9,7 +9,12 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #faf9f6; }
         .manevi-header { font-family: 'Cinzel', serif; }
-        .arabic-text { font-family: 'Amiri', serif; direction: rtl; line-height: 1.6; word-spacing: 2px; }
+        .arabic-text { 
+            font-family: 'Amiri', serif; 
+            direction: rtl; 
+            line-height: 1.6;
+            word-spacing: 2px;
+        }
         .active-scale:active { transform: scale(0.98); }
         @keyframes pulse-soft {
             0% { transform: scale(1); opacity: 1; }
@@ -51,6 +56,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256"><path d="M155.51,24.81a8,8,0,0,0-8.42.88L77.25,80H32A16,16,0,0,0,16,96v64a16,16,0,0,0,16,16H77.25l69.84,54.31A8,8,0,0,0,160,224V32A8,8,0,0,0,155.51,24.81ZM144,207.64,85.14,161.86A8,8,0,0,0,80,160H32V96H80a8,8,0,0,0,5.14-1.86L144,48.36ZM216,128a40,40,0,0,1-40,40,8,8,0,0,1,0-16,24,24,0,0,0,0-48,8,8,0,0,1,0-16A40,40,0,0,1,216,128Z"></path></svg>
             </button>
         </div>
+        <p id="ayet-arapca" class="arabic-text text-2xl text-stone-700 mb-8 text-center italic"></p>
         <p id="ayet-metin" class="text-xl font-light leading-relaxed text-stone-800 italic text-center"></p>
         <p id="ayet-kaynak" class="text-right text-[10px] text-stone-400 mt-6 font-medium tracking-wide">— ...</p>
     </div>
@@ -135,14 +141,15 @@
         async function verileriGetir() {
             const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
             try {
-                // AYETLER (A: Metin, B: Kaynak)
+                // AYETLER (A: Arapça, B: Türkçe, C: Kaynak)
                 const ayetRes = await fetch(AYET_CSV_URL + '&cache=' + Date.now());
                 let ayetData = processCSV(await ayetRes.text());
-                // İlk satır başlık mı diye kontrol et (Arapça içermiyorsa ve çok kısaysa başlık kabul et)
+                // Başlık satırı kontrolü
                 if (ayetData[0][0].length < 20 && !ayetData[0][0].includes(" ")) ayetData.shift();
                 const ayetRow = ayetData[dayOfYear % ayetData.length];
-                document.getElementById('ayet-metin').innerText = ayetRow[0] || "";
-                document.getElementById('ayet-kaynak').innerText = "— " + (ayetRow[1] || "Kuran-ı Kerim");
+                document.getElementById('ayet-arapca').innerText = ayetRow[0] || "";
+                document.getElementById('ayet-metin').innerText = ayetRow[1] || "";
+                document.getElementById('ayet-kaynak').innerText = "— " + (ayetRow[2] || "Kuran-ı Kerim");
 
                 // HADİSLER (A: Arapça, B: Türkçe, C: Kaynak)
                 const hadisRes = await fetch(HADIS_CSV_URL + '&cache=' + Date.now());
