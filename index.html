@@ -10,34 +10,39 @@
         body { font-family: 'Inter', sans-serif; background-color: #faf9f6; }
         .manevi-header { font-family: 'Cinzel', serif; }
         .active-scale:active { transform: scale(0.98); }
+        /* Yumuşak geçiş için */
+        #hicri-etiket, #tarih-etiket { transition: opacity 0.5s ease-in-out; }
     </style>
 </head>
 <body class="text-stone-800 min-h-screen flex flex-col items-center p-6 select-none">
 
-    <header class="w-full max-w-md py-12 text-center">
+    <header class="w-full max-w-md py-10 text-center">
         <h1 class="manevi-header text-4xl tracking-[0.4em] text-stone-700 uppercase">MANEVİ</h1>
         <div class="h-px w-12 bg-stone-300 mx-auto mt-4 opacity-60"></div>
-        <p id="tarih-etiket" class="text-stone-400 text-[10px] uppercase tracking-[0.2em] mt-6 italic"></p>
+        
+        <p id="hicri-etiket" class="text-stone-600 text-xl font-medium tracking-wide mt-8">...</p>
+        
+        <p id="tarih-etiket" class="text-stone-400 text-[10px] uppercase tracking-[0.2em] mt-2 italic"></p>
     </header>
 
     <div id="hata-kutusu" class="hidden w-full max-w-md bg-red-50 text-red-700 p-4 rounded-xl mb-4 text-xs border border-red-100"></div>
 
-    <div class="active-scale w-full max-w-md bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-stone-100 p-8 mb-6">
+    <div class="active-scale w-full max-w-md bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-stone-100 p-8 mb-6 transition-all duration-300">
         <div class="flex items-center gap-2 mb-6">
             <span class="h-1.5 w-1.5 rounded-full bg-amber-600"></span>
             <h2 class="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em]">Günün Mesajı</h2>
         </div>
-        <p id="ana-soz" class="text-xl font-light leading-relaxed text-stone-800 italic text-center">İçerik yükleniyor...</p>
+        <p id="ana-soz" class="text-xl font-light leading-relaxed text-stone-800 italic text-center italic">İçerik yükleniyor...</p>
         <p id="ana-kaynak" class="text-right text-xs text-stone-400 mt-6 font-medium">— ...</p>
     </div>
 
-    <div class="active-scale w-full max-w-md bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-stone-100 p-8 mb-8">
+    <div class="active-scale w-full max-w-md bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-stone-100 p-8 mb-8 transition-all duration-300">
         <div class="flex justify-between items-center mb-6 border-b border-stone-50 pb-4">
             <h2 class="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em]">Vakitler</h2>
-            <span id="durum-mesaj" class="text-[9px] text-stone-300 uppercase tracking-widest italic font-medium">Konum Bekleniyor</span>
+            <span id="durum-mesaj" class="text-[9px] text-stone-300 uppercase tracking-widest italic font-medium tracking-tighter">Konum Bekleniyor</span>
         </div>
         <div id="vakitler-liste" class="space-y-4">
-            <p class="text-stone-300 text-xs text-center">Cihazınızın konum izni gereklidir.</p>
+            <p class="text-stone-300 text-xs text-center">Vakitleri hesaplamak için konum gereklidir.</p>
         </div>
     </div>
 
@@ -46,17 +51,43 @@
     </footer>
 
     <script>
-        // Hata gösterme fonksiyonu
+        // Hata Bildirimi
         function hataGoster(mesaj) {
             const kutu = document.getElementById('hata-kutusu');
             kutu.classList.remove('hidden');
             kutu.innerHTML += `<p>• ${mesaj}</p>`;
         }
 
-        // 1. GÜNCEL TÜRKÇE TARİH
-        function tarihiYazdir() {
-            const secenekler = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-            document.getElementById('tarih-etiket').innerText = new Date().toLocaleDateString('tr-TR', secenekler);
+        // 1. TARİHLERİ YAZDIR (Hicri ve Miladi)
+        async function tarihleriGuncelle() {
+            // Miladi
+            const miladiSecenekler = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            document.getElementById('tarih-etiket').innerText = new Date().toLocaleDateString('tr-TR', miladiSecenekler);
+
+            // Hicri API Call
+            const bugun = new Date();
+            const gun = String(bugun.getDate()).padStart(2, '0');
+            const ay = String(bugun.getMonth() + 1).padStart(2, '0');
+            const yil = bugun.getFullYear();
+
+            try {
+                const response = await fetch(`https://api.aladhan.com/v1/gToH/${gun}-${ay}-${yil}`);
+                const data = await response.json();
+                const h = data.data.hijri;
+
+                // Hicri Ay İsimlerini Türkçeleştirme
+                const aylarTR = {
+                    "Al-Muharram": "Muharrem", "Safar": "Safer", "Rabi' al-awwal": "Rebiülevvel",
+                    "Rabi' al-thani": "Rebiülahır", "Jumada al-ula": "Cemaziyelevvel",
+                    "Jumada al-akhira": "Cemaziyelahır", "Rajab": "Recep", "Sha'ban": "Şaban",
+                    "Ramadan": "Ramazan", "Shawwal": "Şevval", "Dhu al-Qi'dah": "Zilkade", "Dhu al-Hijjah": "Zilhicce"
+                };
+                
+                const ayAdi = aylarTR[h.month.en] || h.month.en;
+                document.getElementById('hicri-etiket').innerText = `${h.day} ${ayAdi} ${h.year}`;
+            } catch (err) {
+                document.getElementById('hicri-etiket').innerText = "Hicri Takvim";
+            }
         }
 
         // 2. GÜNLÜK İÇERİK MANTIĞI
@@ -65,9 +96,8 @@
             const kaynakElement = document.getElementById('ana-kaynak');
             
             try {
-                // ./data/contents.json yolunu kullanıyoruz
                 const response = await fetch('./data/contents.json');
-                if (!response.ok) throw new Error('data/contents.json dosyası bulunamadı! (Lütfen GitHub klasörünü kontrol et)');
+                if (!response.ok) throw new Error('data/contents.json yüklenemedi');
                 
                 const veriler = await response.json();
                 
@@ -81,8 +111,8 @@
                 sozElement.innerText = `"${secilen.soz}"`;
                 kaynakElement.innerText = `— ${secilen.kaynak}`;
             } catch (error) {
-                hataGoster("Sözler yüklenemedi: " + error.message);
-                sozElement.innerText = "Bir mola ver ve nefes al...";
+                sozElement.innerText = "İyilik yap, denize at; balık bilmezse Halik bilir.";
+                kaynakElement.innerText = "— Atasözü";
             }
         }
 
@@ -101,17 +131,13 @@
                         
                         vakitleriListele(result.data.timings);
                         durum.innerText = "KONUM AKTİF";
-                        durum.classList.replace('text-stone-300', 'text-emerald-500');
+                        durum.classList.replace('text-stone-300', 'text-emerald-600');
                     } catch (err) {
-                        hataGoster("Vakit API hatası: " + err.message);
-                        durum.innerText = "BAĞLANTI HATASI";
+                        durum.innerText = "VERİ HATASI";
                     }
-                }, (err) => {
+                }, () => {
                     durum.innerText = "KONUM İZNİ YOK";
-                    hataGoster("Konum izni verilmediği için vakitler gösterilemiyor.");
                 });
-            } else {
-                hataGoster("Tarayıcınız konum özelliğini desteklemiyor.");
             }
         }
 
@@ -132,7 +158,7 @@
         }
 
         // Başlatıcılar
-        tarihiYazdir();
+        tarihleriGuncelle();
         icerikYukle();
         vakitleriGetir();
     </script>
